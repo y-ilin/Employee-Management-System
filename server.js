@@ -40,51 +40,57 @@ function view() {
     connection.query(query, function(err, res) {
       if (err) throw err;
       console.table(res);
-      init();
+      return init();
     });
 }
 
 function addEmployee() {
     // Get current data in database for options for roles and managers
-    connection.query("SELECT CONCAT(e.first_name, ' ', e.last_name) AS manager, r.title FROM employee e LEFT JOIN role r ON r.id = e.role_id", function(err, res) {
+    // connection.query("SELECT CONCAT(e.first_name, ' ', e.last_name) AS manager, r.title FROM employee e JOIN role r ON r.id = e.role_id", function(err, res) {
+    connection.query("SELECT CONCAT(e.first_name, ' ', e.last_name) AS manager FROM employee e", function(err, res) {
         if (err) throw err;
+        console.table(res)
 
-        const roleChoices = res.map((role) => role.title);
-        const managerChoices = res.map((employee) => employee.manager)
-        managerChoices.push("null");
+        connection.query("SELECT title FROM role", function(err, res2) {
 
-        // Prompt user for new employee information
-        inquirer.prompt(
-            [{
-                name: "first_name",
-                type: "input",
-                message: "New employee's first name: ",
-            },
-            {
-                name: "last_name",
-                type: "input",
-                message: "New employee's last name: ",
-            },
-            {
-                name: "role",
-                type: "list",
-                message: "New employee's role: ",
-                choices: roleChoices.filter((item, index) => roleChoices.indexOf(item) === index),
-            },
-            {
-                name: "manager",
-                type: "list",
-                message: "New employee's manager: ",
-                choices: managerChoices,
-            }],
-        ).then(function(res){
-            // Add new empoyee to database
-            connection.query(`INSERT INTO employee (first_name, last_name, role_id, manager_id)
-            VALUES (?, ?, (SELECT id FROM role WHERE title = ?), (SELECT id FROM employee b WHERE CONCAT(b.first_name, ' ', b.last_name) = ?))`,
-            [res.first_name, res.last_name, res.role, res.manager], function(err, res) {
-                if (err) throw err;
-                
-                console.log("-----------  New employee added. -----------");
+            const roleChoices = res2.map((role) => role.title);
+            const managerChoices = res.map((employee) => employee.manager)
+            managerChoices.push("null");
+
+            // Prompt user for new employee information
+            inquirer.prompt(
+                [{
+                    name: "first_name",
+                    type: "input",
+                    message: "New employee's first name: ",
+                },
+                {
+                    name: "last_name",
+                    type: "input",
+                    message: "New employee's last name: ",
+                },
+                {
+                    name: "role",
+                    type: "list",
+                    message: "New employee's role: ",
+                    choices: roleChoices.filter((item, index) => roleChoices.indexOf(item) === index),
+                },
+                {
+                    name: "manager",
+                    type: "list",
+                    message: "New employee's manager: ",
+                    choices: managerChoices,
+                }],
+            ).then(function(result){
+                // Add new empoyee to database
+                connection.query(`INSERT INTO employee (first_name, last_name, role_id, manager_id)
+                VALUES (?, ?, (SELECT id FROM role WHERE title = ?), (SELECT id FROM employee b WHERE CONCAT(b.first_name, ' ', b.last_name) = ?))`,
+                [result.first_name, result.last_name, result.role, result.manager], function(err, result) {
+                    if (err) throw err;
+                    
+                    console.log("-----------  New employee added. -----------");
+                    return init();
+                })
             })
         })
     });
@@ -119,6 +125,7 @@ function updateEmployeeRole() {
                 if (err) throw err;
                 
                 console.log("-----------  Employee role updated. -----------");
+                return init();
             })
         })
     });
@@ -127,6 +134,7 @@ function updateEmployeeRole() {
 function addDepartment() {
     connection.query("SELECT name FROM department", function(err, res) {
         if (err) throw err;
+        console.log(res);
 
         const existingDepartments = res.map((department) => department.name);
 
@@ -187,6 +195,7 @@ function addRole() {
                 // Determines if this role already exists in this department
                 if (result === true) {
                     console.log("-----------  This role already exists in this department. -----------");
+                    return init();
                 } else {
                     // Add new role to this department in database
                     connection.query(`INSERT INTO role (title, salary, department_id) VALUES (?, ?, (SELECT d.id FROM department d WHERE d.name = ?))`,
@@ -202,6 +211,7 @@ function addRole() {
     });
 }
 
+
 async function init() {
     const actionResponse = await promptAction();
     if (actionResponse.action === "View all employees") {
@@ -214,19 +224,8 @@ async function init() {
         addDepartment();
     } else if (actionResponse.action === "Add a role") {
         addRole();
-    } else {
+    } else if (actionResponse.action === "Exit app") {
+        console.log("-----------  Exiting app. -----------")
         connection.end();
     }
 }
-
-// Build a command-line application that at a minimum allows the user to:
-    // Add departments, roles, employees
-    // View departments, roles, employees
-    // Update employee roles
-
-// Bonus points if you're able to:
-    // Update employee managers
-    // View employees by manager
-    // Delete departments, roles, and employees
-    // View the total utilized budget of a department --
-    // ie the combined salaries of all employees in that department
