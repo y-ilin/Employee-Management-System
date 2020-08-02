@@ -52,6 +52,7 @@ function addEmployee() {
         console.table(res)
 
         connection.query("SELECT title FROM role", function(err, res2) {
+            if (err) throw err;
 
             const roleChoices = res2.map((role) => role.title);
             const managerChoices = res.map((employee) => employee.manager)
@@ -164,42 +165,44 @@ function addDepartment() {
 }
 
 function addRole() {
-    connection.query("SELECT role.title, department.name FROM role LEFT JOIN department ON department.id = role.department_id", function(err, res) {
+    // connection.query("SELECT role.title, department.name FROM role LEFT JOIN department ON department.id = role.department_id", function(err, res) {
+    connection.query("SELECT title FROM role", function(err, res) {
         if (err) throw err;
         console.log(res);
 
-        const departmentChoices = res.map((department) => department.name)
+        connection.query("SELECT name FROM department", function(err, res2) {
+            if (err) throw err;
 
-        // Prompt user for new employee information
-        inquirer.prompt(
-            [{
-                name: "title",
-                type: "input",
-                message: "Name of new role: ",
-            },
-            {
-                name: "salary",
-                type: "input",
-                message: "Salary for the role: ",
-            },
-            {
-                name: "department",
-                type: "list",
-                message: "Department the role belongs to: ",
-                choices: departmentChoices.filter((item, index) => departmentChoices.indexOf(item) === index),
-            }],
-        ).then(function(res){
-            // Check for this role title in this department
-            connection.query("SELECT department.name FROM department WHERE department.id = (SELECT role.department_id FROM role WHERE role.title = ?)", res.title, function(err, result) {
-                if (err) throw err;
-                // Determines if this role already exists in this department
-                if (result === true) {
-                    console.log("-----------  This role already exists in this department. -----------");
+            const existingRoles = res.map((role) => role.title);
+            const departmentChoices = res2.map((department) => department.name)
+
+            // Prompt user for new employee information
+            inquirer.prompt(
+                [{
+                    name: "title",
+                    type: "input",
+                    message: "Name of new role: ",
+                },
+                {
+                    name: "salary",
+                    type: "input",
+                    message: "Salary for the role: ",
+                },
+                {
+                    name: "department",
+                    type: "list",
+                    message: "Department the role belongs to: ",
+                    choices: departmentChoices.filter((item, index) => departmentChoices.indexOf(item) === index),
+                }],
+            ).then(function(result){
+                // Check for this role title in this department
+                if (existingRoles.includes(result.title)) {
+                    console.log("-----------  This role already exists. -----------");
                     return init();
                 } else {
                     // Add new role to this department in database
                     connection.query(`INSERT INTO role (title, salary, department_id) VALUES (?, ?, (SELECT d.id FROM department d WHERE d.name = ?))`,
-                    [res.title, res.salary, res.department], function(err, res) {
+                    [result.title, result.salary, result.department], function(err, result) {
                         if (err) throw err;
                         
                         console.log("-----------  New role added. -----------");
