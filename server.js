@@ -23,7 +23,7 @@ function promptAction() {
             name: "action",
             type: "list",
             message: "What would you like to do? ",
-            choices: ["View all employees", "Add an employee", "Update an employee's role", "Add a department", "Add a role", "Exit app"]
+            choices: ["View all employees", "Add an employee", "Update an employee's role", "Add a department", "Add a role", "Delete an employee", "Exit app"]
         }
     )
 };
@@ -49,7 +49,6 @@ function addEmployee() {
     // connection.query("SELECT CONCAT(e.first_name, ' ', e.last_name) AS manager, r.title FROM employee e JOIN role r ON r.id = e.role_id", function(err, res) {
     connection.query("SELECT CONCAT(e.first_name, ' ', e.last_name) AS manager FROM employee e", function(err, res) {
         if (err) throw err;
-        console.table(res)
 
         connection.query("SELECT title FROM role", function(err, res2) {
             if (err) throw err;
@@ -89,7 +88,9 @@ function addEmployee() {
                 [result.first_name, result.last_name, result.role, result.manager], function(err, result) {
                     if (err) throw err;
                     
-                    console.log("-----------  New employee added. -----------");
+                    console.log("=====================================================")
+                    console.log("================  New employee added. ===============")
+                    console.log("=====================================================")
                     return init();
                 })
             })
@@ -110,7 +111,7 @@ function updateEmployeeRole() {
             [{
                 name: "employee",
                 type: "list",
-                message: "New employee's manager: ",
+                message: "Update role for this employee: ",
                 choices: employeeChoices,
             },
             {
@@ -125,7 +126,9 @@ function updateEmployeeRole() {
             [res.role, res.employee], function(err, res) {
                 if (err) throw err;
                 
-                console.log("-----------  Employee role updated. -----------");
+                console.log("=====================================================")
+                console.log("==============  Employee role updated. ==============")
+                console.log("=====================================================")
                 return init();
             })
         })
@@ -135,7 +138,8 @@ function updateEmployeeRole() {
 function addDepartment() {
     connection.query("SELECT name FROM department", function(err, res) {
         if (err) throw err;
-        console.log(res);
+        console.log("Existing departments:");
+        console.table(res);
 
         const existingDepartments = res.map((department) => department.name);
 
@@ -148,7 +152,10 @@ function addDepartment() {
             }],
         ).then(function(res){
             if (existingDepartments.includes(res.department)) {
-                console.log("-----------  This department already exists. -----------");
+                console.log("=====================================================")
+                console.log("=========  This department already exists. ==========")
+                console.log("=====================================================")
+
                 return init();
             } else {
                 // Add new department to database
@@ -156,7 +163,9 @@ function addDepartment() {
                 res.department, function(err, res) {
                     if (err) throw err;
                     
-                    console.log("-----------  New department added. -----------");
+                    console.log("=====================================================")
+                    console.log("===============  New department added. ==============")
+                    console.log("=====================================================")
                     return init();
                 })
             }
@@ -168,7 +177,8 @@ function addRole() {
     // connection.query("SELECT role.title, department.name FROM role LEFT JOIN department ON department.id = role.department_id", function(err, res) {
     connection.query("SELECT title FROM role", function(err, res) {
         if (err) throw err;
-        console.log(res);
+        console.log("Existing roles:")
+        console.table(res);
 
         connection.query("SELECT name FROM department", function(err, res2) {
             if (err) throw err;
@@ -197,15 +207,19 @@ function addRole() {
             ).then(function(result){
                 // Check for this role title in this department
                 if (existingRoles.includes(result.title)) {
-                    console.log("-----------  This role already exists. -----------");
+                    console.log("=====================================================")
+                    console.log("=============  This role already exists. ============")
+                    console.log("=====================================================")
                     return init();
                 } else {
                     // Add new role to this department in database
                     connection.query(`INSERT INTO role (title, salary, department_id) VALUES (?, ?, (SELECT d.id FROM department d WHERE d.name = ?))`,
                     [result.title, result.salary, result.department], function(err, result) {
                         if (err) throw err;
-                        
-                        console.log("-----------  New role added. -----------");
+
+                        console.log("=====================================================")
+                        console.log("==================  New role added. =================")
+                        console.log("=====================================================")
                         return init();
                     })
                 }
@@ -214,21 +228,76 @@ function addRole() {
     });
 }
 
+function deleteEmployee() {
+    // Get current data in database for options for employees and roles
+    connection.query("SELECT CONCAT(e.first_name, ' ', e.last_name) AS employee FROM employee e", function(err, res) {
+        if (err) throw err;
+
+        const existingEmployees = res.map((employee) => employee.employee)
+        
+        // Prompt user for new employee information
+        inquirer.prompt(
+            {
+                name: "employee",
+                type: "list",
+                message: "Delete the following employee: ",
+                choices: existingEmployees,
+            },
+        ).then(function(res){
+            // Add new empoyee to database
+            connection.query(`DELETE FROM employee e WHERE CONCAT(e.first_name, ' ', e.last_name) = ?`,
+            res.employee, function(err, res) {
+                if (err) throw err;
+                
+                console.log("=====================================================")
+                console.log("=================  Employee deleted. ================")
+                console.log("=====================================================")
+                return init();
+            })
+        })
+    });}
+
 
 async function init() {
     const actionResponse = await promptAction();
-    if (actionResponse.action === "View all employees") {
-        view();
-    } else if (actionResponse.action === "Add an employee") {
-        addEmployee();
-    } else if (actionResponse.action === "Update an employee's role") {
-        updateEmployeeRole();
-    } else if (actionResponse.action === "Add a department") {
-        addDepartment();
-    } else if (actionResponse.action === "Add a role") {
-        addRole();
-    } else if (actionResponse.action === "Exit app") {
-        console.log("-----------  Exiting app. -----------")
-        connection.end();
+    switch (actionResponse.action) {
+        case "View all employees":
+            view();
+            break;
+        case "Add an employee":
+            addEmployee();
+            break;
+        case "Update an employee's role":
+            updateEmployeeRole();
+            break;
+        case "Add a department":
+            addDepartment();
+            break;
+        case "Add a role":
+            addRole();
+            break;
+        case "Delete an employee":
+            deleteEmployee();
+            break;
+        case "Exit app":
+            console.log("=====================================================")
+            console.log("===================  Exiting app. ===================")
+            console.log("=====================================================")
+            connection.end(); 
     }
+
+    // if (actionResponse.action === "View all employees") {
+    //     view();
+    // } else if (actionResponse.action === "Add an employee") {
+    //     addEmployee();
+    // } else if (actionResponse.action === "Update an employee's role") {
+    //     updateEmployeeRole();
+    // } else if (actionResponse.action === "Add a department") {
+    //     addDepartment();
+    // } else if (actionResponse.action === "Add a role") {
+    //     addRole();
+    // } else if (actionResponse.action === "Exit app") {
+    //     console.log("-----------  Exiting app. -----------")
+    //     connection.end();
+    // }
 }
