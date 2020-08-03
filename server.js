@@ -285,19 +285,4 @@ async function init() {
             console.log("=====================================================")
             connection.end(); 
     }
-
-    // if (actionResponse.action === "View all employees") {
-    //     view();
-    // } else if (actionResponse.action === "Add an employee") {
-    //     addEmployee();
-    // } else if (actionResponse.action === "Update an employee's role") {
-    //     updateEmployeeRole();
-    // } else if (actionResponse.action === "Add a department") {
-    //     addDepartment();
-    // } else if (actionResponse.action === "Add a role") {
-    //     addRole();
-    // } else if (actionResponse.action === "Exit app") {
-    //     console.log("-----------  Exiting app. -----------")
-    //     connection.end();
-    // }
 }
