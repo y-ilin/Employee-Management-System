@@ -15,7 +15,7 @@ The functions currently available include adding an employee to the system with 
 adding roles, adding departments, updating an employee's role, viewing all the employees, and deleting employees.
 
 ## Installation
-Clone or download the package and open terminal in the package directory. Then run the following command to install all the dependencies into the local node_modules folder:
+Clone or download the package and open terminal in the package directory. Run the schema.sql file in MySQL to set up the database. The seed.sql file is optional to run in MySQL for some sample inputs. Then run the following command in terminal to install all the dependencies into the local node_modules folder:
 
 ```
 npm i
