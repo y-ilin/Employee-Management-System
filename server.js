@@ -1,5 +1,6 @@
 const mysql = require("mysql");
 const inquirer = require("inquirer");
+const cTable = require('console.table');
 require('dotenv').config();
 
 var connection = mysql.createConnection({
@@ -138,7 +139,7 @@ function updateEmployeeRole() {
 function addDepartment() {
     connection.query("SELECT name FROM department", function(err, res) {
         if (err) throw err;
-        console.log("Existing departments:");
+        console.log("Existing departments:\n");
         console.table(res);
 
         const existingDepartments = res.map((department) => department.name);
@@ -177,7 +178,7 @@ function addRole() {
     // connection.query("SELECT role.title, department.name FROM role LEFT JOIN department ON department.id = role.department_id", function(err, res) {
     connection.query("SELECT title FROM role", function(err, res) {
         if (err) throw err;
-        console.log("Existing roles:")
+        console.log("Existing roles:\n")
         console.table(res);
 
         connection.query("SELECT name FROM department", function(err, res2) {
